@@ -22,20 +22,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     candidate: [
       { name: "Job Board", path: "/dashboard", icon: <Briefcase size={18} /> },
       { name: "My Applications", path: "/dashboard/applications", icon: <Briefcase size={18} /> },
-      { name: "Profile", path: "/dashboard/profile", icon: <User size={18} /> },
       { name: "Settings", path: "/settings", icon: <Settings size={18} /> },
     ],
     recruiter: [
       { name: "Dashboard", path: "/dashboard", icon: <Briefcase size={18} /> },
       { name: "My Job Posts", path: "/dashboard/jobs", icon: <Briefcase size={18} /> },
-      { name: "Create Job", path: "/dashboard/jobs/create", icon: <Briefcase size={18} /> },
       { name: "Settings", path: "/settings", icon: <Settings size={18} /> },
     ],
     company: [
       { name: "Dashboard", path: "/dashboard", icon: <Briefcase size={18} /> },
       { name: "Job Posts", path: "/dashboard/jobs", icon: <Briefcase size={18} /> },
       { name: "Recruiters", path: "/dashboard/recruiters", icon: <Users size={18} /> },
-      { name: "Applications", path: "/dashboard/applications", icon: <Briefcase size={18} /> },
       { name: "Settings", path: "/settings", icon: <Settings size={18} /> },
     ],
   };
