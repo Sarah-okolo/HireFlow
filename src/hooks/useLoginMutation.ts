@@ -23,7 +23,7 @@ type LoginResponse = {
 export const useLoginMutation = () =>
   useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      const res = await axios.post('/login', credentials);
+      const res = await axios.post('https://hireflow-server-production.up.railway.app/login', credentials);
       return res.data;
     },
   });
