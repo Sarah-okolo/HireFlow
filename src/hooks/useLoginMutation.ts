@@ -1,6 +1,6 @@
 // hooks/useLoginMutation.ts
 import { useMutation } from '@tanstack/react-query';
-import { axiosPrivate } from '@/lib/axiosPrivate';
+import axios from 'axios';
 import Cookies from 'js-cookie';
 
 type LoginCredentials = {
@@ -23,7 +23,7 @@ type LoginResponse = {
 export const useLoginMutation = () =>
   useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      const res = await axiosPrivate.post('/api/auth/login', credentials);
+      const res = await axios.post('/api/auth/login', credentials);
       return res.data;
     },
   });
