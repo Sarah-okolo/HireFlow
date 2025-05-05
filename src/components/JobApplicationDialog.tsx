@@ -1,9 +1,17 @@
-
 import { useState } from "react";
+import axios from "axios";
+
 import { useAuthStore } from "@/stores/authStore";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Job, submitApplication } from "@/utils/mockApi";
+import { Job } from "@/utils/types"; // Assuming Job is exported from a types file
 import { toast } from "@/components/ui/sonner";
 import { UploadCloud } from "lucide-react";
 
@@ -13,7 +21,11 @@ interface JobApplicationDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function JobApplicationDialog({ job, open, onOpenChange }: JobApplicationDialogProps) {
+export function JobApplicationDialog({
+  job,
+  open,
+  onOpenChange
+}: JobApplicationDialogProps) {
   const { user } = useAuthStore();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,27 +38,38 @@ export function JobApplicationDialog({ job, open, onOpenChange }: JobApplication
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast.error("You must be logged in to apply");
       return;
     }
-    
+
     if (!resumeFile) {
       toast.error("Please upload your resume");
       return;
     }
 
+    const formData = new FormData();
+    formData.append("jobId", job._id);
+    formData.append("candidateId", user.id);
+    formData.append("resume", resumeFile);
+
     try {
       setIsSubmitting(true);
-      // In a real app, we would upload the file to a server
-      // For now, we'll just use the filename
-      submitApplication(job.id, user.id, resumeFile.name);
-      
+
+      await axios.post("/api/applications", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      });
+
       toast.success("Application submitted successfully!");
       onOpenChange(false);
+      setResumeFile(null);
     } catch (error) {
-      toast.error((error as Error).message || "Failed to submit application");
+      toast.error(
+        (error as any)?.response?.data?.message || "Failed to submit application"
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -58,13 +81,13 @@ export function JobApplicationDialog({ job, open, onOpenChange }: JobApplication
         <DialogHeader>
           <DialogTitle>Apply for {job.title}</DialogTitle>
           <DialogDescription>
-            Submit your application to {job.company} for this position.
+            Submit your application for this position.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid w-full gap-2">
             <label htmlFor="resume" className="text-sm font-medium">Resume</label>
-            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors">
+            <div className="relative border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 flex flex-col items-center justify-center gap-1 hover:border-primary/50 transition-colors">
               {resumeFile ? (
                 <div className="flex flex-col items-center gap-1">
                   <p className="text-sm font-medium">{resumeFile.name}</p>

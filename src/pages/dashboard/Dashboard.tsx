@@ -1,37 +1,75 @@
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore } from "@/stores/authStore";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Job, getAllJobs } from "@/utils/mockApi";
 import { JobApplicationDialog } from "@/components/JobApplicationDialog";
+import axios from "axios";
+
+interface Job {
+  id: string;
+  _id: string;
+  createdAt: string;
+  recruiterId: string;
+  companyId: string;
+  title: string;
+  company: string;
+  location: string;
+  type: string;
+  salary: string;
+  description: string;
+  tags: string[];
+}
 
 export default function Dashboard() {
   const { user } = useAuthStore();
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isApplicationDialogOpen, setIsApplicationDialogOpen] = useState(false);
-  
+
+  const [recruiterStats, setRecruiterStats] = useState(null);
+  const [companyStats, setCompanyStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const openApplicationDialog = (job: Job) => {
     setSelectedJob(job);
     setIsApplicationDialogOpen(true);
   };
-  
-  // Mock jobs for display
-  const mockJobs = getAllJobs();
 
-  // Content based on user role
+  useEffect(() => {
+    async function fetchDashboardData() {
+      try {
+        if (user?.role === "candidate") {
+          const { data } = await axios.get("/api/jobs");
+          setJobs(data.jobs || []);
+        } else if (user?.role === "recruiter") {
+          const { data } = await axios.get("/api/recruiter/overview");
+          setRecruiterStats(data);
+        } else if (user?.role === "company") {
+          const { data } = await axios.get("/api/company/overview");
+          setCompanyStats(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchDashboardData();
+  }, [user?.role]);
+
   const dashboardContent = {
     candidate: (
       <div className="grid gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Job Board</h1>
         </div>
-        
+
         <div className="grid gap-4">
-          {mockJobs.length > 0 ? (
-            mockJobs.map((job) => (
+          {jobs.length > 0 ? (
+            jobs.map((job) => (
               <Card key={job.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
@@ -69,7 +107,7 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
-        
+
         {selectedJob && (
           <JobApplicationDialog 
             job={selectedJob}
@@ -79,8 +117,8 @@ export default function Dashboard() {
         )}
       </div>
     ),
-    
-    recruiter: (
+
+    recruiter: recruiterStats && (
       <div className="grid gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Recruiter Dashboard</h1>
@@ -88,49 +126,23 @@ export default function Dashboard() {
             <Link to="/dashboard/jobs/create">Create Job Post</Link>
           </Button>
         </div>
-        
+
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle>Active Jobs</CardTitle>
-              <CardDescription>Your current job postings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">8</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Applications</CardTitle>
-              <CardDescription>Total applications received</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">45</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Shortlisted</CardTitle>
-              <CardDescription>Candidates shortlisted</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">12</p>
-            </CardContent>
-          </Card>
+          <StatCard title="Active Jobs" description="Your current job postings" value={recruiterStats.activeJobs} />
+          <StatCard title="Applications" description="Total applications received" value={recruiterStats.totalApplications} />
+          <StatCard title="Shortlisted" description="Candidates shortlisted" value={recruiterStats.shortlisted} />
         </div>
-        
+
         <h2 className="text-2xl font-bold mt-4">Recent Job Posts</h2>
         <div className="grid gap-4">
-          {[1, 2, 3].map((job) => (
-            <Card key={job}>
+          {recruiterStats.recentJobs.map((job) => (
+            <Card key={job.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle>Frontend Developer</CardTitle>
+                    <CardTitle>{job.title}</CardTitle>
                     <CardDescription className="mt-1">
-                      Posted 3 days ago • 15 applications
+                      Posted {job.postedAgo} • {job.applicationCount} applications
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="sm">View Applications</Button>
@@ -139,8 +151,8 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex justify-between items-center text-sm">
                   <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground">Status: <span className="text-green-600 font-medium">Active</span></span>
-                    <span className="text-muted-foreground">Expires: <span className="font-medium">30 days</span></span>
+                    <span className="text-muted-foreground">Status: <span className="text-green-600 font-medium">{job.status}</span></span>
+                    <span className="text-muted-foreground">Expires: <span className="font-medium">{job.expiresIn}</span></span>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost">Edit</Button>
@@ -153,55 +165,20 @@ export default function Dashboard() {
         </div>
       </div>
     ),
-    
-    company: (
+
+    company: companyStats && (
       <div className="grid gap-6">
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Company Dashboard</h1>
         </div>
-        
+
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Total Jobs</CardTitle>
-              <CardDescription>Job postings by your company</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">24</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Recruiters</CardTitle>
-              <CardDescription>Active recruiters</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">6</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Applications</CardTitle>
-              <CardDescription>Total applications received</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">128</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Hired</CardTitle>
-              <CardDescription>Candidates hired</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">12</p>
-            </CardContent>
-          </Card>
+          <StatCard title="Total Jobs" description="Job postings by your company" value={companyStats.totalJobs} />
+          <StatCard title="Recruiters" description="Active recruiters" value={companyStats.recruiters} />
+          <StatCard title="Applications" description="Total applications received" value={companyStats.totalApplications} />
+          <StatCard title="Hired" description="Candidates hired" value={companyStats.hired} />
         </div>
-        
+
         <div className="grid gap-6 grid-cols-1">
           <Card>
             <CardHeader className="text-center">
@@ -210,11 +187,11 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-4">
-                {[1, 2, 3].map((job) => (
-                  <li key={job} className="flex justify-between items-center">
+                {companyStats.recentJobs.map((job) => (
+                  <li key={job.id} className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium">Software Engineer</p>
-                      <p className="text-sm text-muted-foreground">Posted by John Doe • 2 days ago</p>
+                      <p className="font-medium">{job.title}</p>
+                      <p className="text-sm text-muted-foreground">Posted by {job.recruiter} • {job.postedAgo}</p>
                     </div>
                     <Button variant="outline" size="sm">View</Button>
                   </li>
@@ -228,9 +205,31 @@ export default function Dashboard() {
     )
   };
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="text-center text-muted-foreground py-12">Loading dashboard...</div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       {user?.role && dashboardContent[user.role]}
     </DashboardLayout>
+  );
+}
+
+function StatCard({ title, description, value }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-3xl font-bold">{value}</p>
+      </CardContent>
+    </Card>
   );
 }

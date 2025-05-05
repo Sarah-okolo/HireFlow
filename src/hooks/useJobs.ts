@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { Job } from '@/types/job';
+import { axiosPrivate } from '@/lib/axiosPrivate';
+import { Job } from '@/utils/types';
 
 // Define query keys
 export const jobKeys = {
@@ -17,7 +17,7 @@ export const useJobs = (filters: Record<string, any> = {}) => {
   return useQuery({
     queryKey: jobKeys.list(filters),
     queryFn: async () => {
-      const response = await apiClient.get('/jobs', { params: filters });
+      const response = await axiosPrivate.get('/jobs', { params: filters });
       return response.data;
     },
   });
@@ -28,7 +28,7 @@ export const useJob = (jobId: string) => {
   return useQuery({
     queryKey: jobKeys.detail(jobId),
     queryFn: async () => {
-      const response = await apiClient.get(`/jobs/${jobId}`);
+      const response = await axiosPrivate.get(`/jobs/${jobId}`);
       return response.data;
     },
     enabled: !!jobId,
@@ -41,7 +41,7 @@ export const useCreateJob = () => {
   
   return useMutation({
     mutationFn: async (newJob: Omit<Job, 'id' | 'postedAt'>) => {
-      const response = await apiClient.post('/jobs', newJob);
+      const response = await axiosPrivate.post('/jobs', newJob);
       return response.data;
     },
     onSuccess: () => {
@@ -56,7 +56,7 @@ export const useUpdateJob = () => {
   
   return useMutation({
     mutationFn: async ({ jobId, data }: { jobId: string; data: Partial<Job> }) => {
-      const response = await apiClient.put(`/jobs/${jobId}`, data);
+      const response = await axiosPrivate.put(`/jobs/${jobId}`, data);
       return response.data;
     },
     onSuccess: (_, variables) => {
@@ -72,7 +72,7 @@ export const useDeleteJob = () => {
   
   return useMutation({
     mutationFn: async (jobId: string) => {
-      await apiClient.delete(`/jobs/${jobId}`);
+      await axiosPrivate.delete(`/jobs/${jobId}`);
       return jobId;
     },
     onSuccess: (jobId) => {

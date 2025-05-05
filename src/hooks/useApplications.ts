@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
-import { Application } from '@/types/application';
+import { axiosPrivate } from '@/lib/axiosPrivate';
+import { Application } from '@/utils/types';
 
 // Define query keys
 export const applicationKeys = {
@@ -20,7 +20,7 @@ export const useApplicationsByJob = (jobId: string) => {
   return useQuery({
     queryKey: applicationKeys.byJob(jobId),
     queryFn: async () => {
-      const response = await apiClient.get(`/jobs/${jobId}/applications`);
+      const response = await axiosPrivate.get(`/jobs/${jobId}/applications`);
       return response.data;
     },
     enabled: !!jobId,
@@ -32,7 +32,7 @@ export const useApplicationsByCandidate = (candidateId: string) => {
   return useQuery({
     queryKey: applicationKeys.byCandidate(candidateId),
     queryFn: async () => {
-      const response = await apiClient.get(`/candidates/${candidateId}/applications`);
+      const response = await axiosPrivate.get(`/candidates/${candidateId}/applications`);
       return response.data;
     },
     enabled: !!candidateId,
@@ -44,7 +44,7 @@ export const useShortlistedApplications = (companyId: string) => {
   return useQuery({
     queryKey: applicationKeys.shortlisted(companyId),
     queryFn: async () => {
-      const response = await apiClient.get(`/companies/${companyId}/applications/shortlisted`);
+      const response = await axiosPrivate.get(`/companies/${companyId}/applications/shortlisted`);
       return response.data;
     },
     enabled: !!companyId,
@@ -61,7 +61,7 @@ export const useSubmitApplication = () => {
       candidateId: string;
       resumeFileName: string;
     }) => {
-      const response = await apiClient.post('/applications', application);
+      const response = await axiosPrivate.post('/applications', application);
       return response.data;
     },
     onSuccess: (_, variables) => {
@@ -77,7 +77,7 @@ export const useUpdateApplicationStatus = () => {
   
   return useMutation({
     mutationFn: async ({ applicationId, status }: { applicationId: string; status: Application['status'] }) => {
-      const response = await apiClient.patch(`/applications/${applicationId}/status`, { status });
+      const response = await axiosPrivate.patch(`/applications/${applicationId}/status`, { status });
       return response.data;
     },
     onSuccess: (data) => {

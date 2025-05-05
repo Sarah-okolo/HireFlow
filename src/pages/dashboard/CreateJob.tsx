@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
@@ -8,14 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuthStore } from "@/stores/authStore";
-import { createJob, getUserById } from "@/utils/mockApi";
 import { toast } from "@/hooks/use-toast";
+import axios from "axios";
 
 export default function CreateJob() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     company: "",
@@ -23,7 +22,7 @@ export default function CreateJob() {
     location: "",
     salary: "",
     type: "Full-time",
-    tags: "React, JavaScript, Frontend" // Default tags
+    tags: "React, JavaScript, Frontend"
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -33,7 +32,7 @@ export default function CreateJob() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user || user.role !== 'recruiter' || !user.companyId) {
       toast({
         title: "Error",
@@ -42,34 +41,27 @@ export default function CreateJob() {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
-      // Get company name
-      const recruiter = getUserById(user.id);
-      const companyName = recruiter?.companyId ? "Company " + recruiter.companyId : "Unknown Company";
-      
-      // Create job
-      const newJob = createJob({
-        title: formData.title,
-        description: formData.description,
-        company: formData.company || companyName,
-        companyId: user.companyId,
-        recruiterId: user.id,
-        location: formData.location,
-        salary: formData.salary,
-        type: formData.type,
+      const payload = {
+        ...formData,
         tags: formData.tags.split(',').map(tag => tag.trim()),
-      });
-      
+        recruiterId: user.id,
+        companyId: user.companyId,
+        company: formData.company || `Company ${user.companyId}`
+      };
+
+      await axios.post('/api/jobs/create', payload);
+
       toast({
         title: "Success!",
         description: "Your job has been posted successfully."
       });
-      
+
       navigate('/dashboard/jobs');
-    } catch (error) {
+    } catch (err) {
       toast({
         title: "Error",
         description: "Failed to create job post. Please try again.",
@@ -86,7 +78,7 @@ export default function CreateJob() {
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold tracking-tight">Create Job Post</h1>
         </div>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Job Details</CardTitle>
@@ -120,7 +112,7 @@ export default function CreateJob() {
                     />
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Job Description</Label>
                   <Textarea
@@ -146,7 +138,7 @@ export default function CreateJob() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="salary">Salary Range</Label>
                     <Input
@@ -158,7 +150,7 @@ export default function CreateJob() {
                       required
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="type">Job Type</Label>
                     <select
@@ -177,7 +169,7 @@ export default function CreateJob() {
                     </select>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="tags">Skills/Tags (comma separated)</Label>
                   <Input
@@ -189,7 +181,7 @@ export default function CreateJob() {
                   />
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-4">
                 <Button 
                   type="button" 

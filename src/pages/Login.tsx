@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { useAuthStore, UserRole } from "@/stores/authStore";
+import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,71 +8,50 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { useToast } from "@/hooks/use-toast";
 import Cookies from "js-cookie";
-
+import { useLoginMutation } from "@/hooks/useLoginMutation"; // ✅ your new hook
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const { login } = useAuthStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const { mutate: loginMutate, isPending } = useLoginMutation();
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-  
-    try {
-      const body = {
-        username,
-        password,
-      };
 
-      console.log("Login request body:", body);
+    loginMutate(
+      { username, password },
+      {
+        onSuccess: (data) => {
+          Cookies.set("token", data.token, { expires: 7 });
 
-      const response = await fetch("https://hireflow-server-production.up.railway.app/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+          login({
+            id: data.user._id,
+            username: data.user.username,
+            role: data.user.role,
+            companyId: data.user.companyId,
+          });
+
+          toast({
+            title: "Logged in successfully",
+            description: `Welcome back, ${data.user.username}!`,
+          });
+
+          navigate("/dashboard");
         },
-        body: JSON.stringify(body),
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        console.log('error:', data);
-        throw new Error(data.error || "Login failed");
+        onError: (err: any) => {
+          toast({
+            title: "Login failed",
+            description: err?.response?.data?.error || "Something went wrong",
+            variant: "destructive",
+          });
+        },
       }
-  
-      // Set token to cookie
-      Cookies.set("token", data.token, { expires: 7 }); // Expires in 7 days
-  
-      // Pass user data to your auth store
-      login({
-        id: data.user._id,
-        username: data.user.username,
-        role: data.user.role,
-        companyId: data.user.companyId,
-      });
-  
-      toast({
-        title: "Logged in successfully",
-        description: `Welcome back, ${data.user.username}!`,
-      });
-  
-      navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Login failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    );
   };
-  
 
   return (
     <MainLayout>
@@ -109,8 +87,8 @@ export default function Login() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Logging in..." : "Login"}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? "Logging in..." : "Login"}
               </Button>
               <div className="text-center text-sm">
                 Don't have an account?{" "}

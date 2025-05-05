@@ -1,11 +1,13 @@
-
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Application, Job, User, getApplicationsByJobId } from "@/utils/mockApi";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
+import { Application } from "@/utils/types";
+import { updateApplicationStatus } from "@/services/applicationService";
+import { getApplicationsByJobId } from "@/services/applicationService"; 
+import { Job } from "@/utils/types";
 
 interface JobApplicationsListProps {
   job: Job;
@@ -18,24 +20,51 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
 
   useEffect(() => {
     if (open && job) {
-      const jobApplications = getApplicationsByJobId(job.id);
-      setApplications(jobApplications);
+      // Fetch applications for the job
+      getApplicationsByJobId(job._id).then((jobApplications) => {
+        setApplications(jobApplications);
+      }).catch((error) => {
+        console.error("Error fetching job applications:", error);
+      });
     }
   }, [open, job]);
 
   // Helper function to get status badge color
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">Pending</Badge>;
-      case 'shortlisted':
+      case "shortlisted":
         return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Shortlisted</Badge>;
-      case 'accepted':
+      case "accepted":
         return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Accepted</Badge>;
-      case 'rejected':
+      case "rejected":
         return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Rejected</Badge>;
       default:
         return <Badge variant="outline">Unknown</Badge>;
+    }
+  };
+
+  // Handle status update
+  const handleStatusUpdate = async (applicationId: string, action: "shortlist" | "reject" | "approve") => {
+    try {
+      await updateApplicationStatus(applicationId, action);
+      // Map action to the corresponding Application status
+      const statusMap: Record<typeof action, Application["status"]> = {
+        shortlist: "shortlisted",
+        reject: "rejected",
+        approve: "accepted",
+      };
+      // Update the local applications list to reflect the change (optimistic UI)
+      setApplications((prevApplications) =>
+        prevApplications.map((application) =>
+          application._id === applicationId
+            ? { ...application, status: statusMap[action] }
+            : application
+        )
+      );
+    } catch (error) {
+      console.error("Error updating application status:", error);
     }
   };
 
@@ -67,13 +96,38 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
               </TableHeader>
               <TableBody>
                 {applications.map((application) => (
-                  <TableRow key={application.id}>
+                  <TableRow key={application._id}>
                     <TableCell className="font-medium">{application.candidateId}</TableCell>
                     <TableCell>{application.resumeFileName}</TableCell>
-                    <TableCell>{format(new Date(application.appliedAt), 'PPP')}</TableCell>
+                    <TableCell>{format(new Date(application.appliedAt), "PPP")}</TableCell>
                     <TableCell>{getStatusBadge(application.status)}</TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">View</Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStatusUpdate(application._id, "shortlist")}
+                        disabled={application.status === "shortlisted"}
+                      >
+                        Shortlist
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500"
+                        onClick={() => handleStatusUpdate(application._id, "reject")}
+                        disabled={application.status === "rejected"}
+                      >
+                        Reject
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-green-500"
+                        onClick={() => handleStatusUpdate(application._id, "approve")}
+                        disabled={application.status === "accepted"}
+                      >
+                        Approve
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

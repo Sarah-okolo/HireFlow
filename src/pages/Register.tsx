@@ -12,6 +12,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { UserRole, useAuthStore } from "@/stores/authStore";
 import { useToast } from "@/hooks/use-toast";
+import { useRegisterMutation } from "@/hooks/useRegisterMutation";
 
 export default function Register() {
   const [username, setUsername] = useState("");
@@ -32,71 +33,61 @@ export default function Register() {
     if (newRole !== "company") setCompanyName("");
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const { mutateAsync: registerMutation } = useRegisterMutation();
 
-    try {
-      if (role === "recruiter" && !companyId) {
-        throw new Error("Company ID is required for recruiters.");
-      }
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-      if (role === "company" && !companyName) {
-        throw new Error("Company name is required.");
-      }
-
-      const body = {
-        username,
-        password,
-        role,
-        ...(role === "recruiter" && { companyId }),
-        ...(role === "company" && { companyName })
-      };
-      console.log("Registration request body:", body);
-
-      const res = await fetch("https://hireflow-server-production.up.railway.app/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || "Registration failed");
-      }
-
-      // Set token to cookie
-      Cookies.set("token", data.token, { expires: 7 }); // Expires in 7 days
-        
-
-      login({
-        id: data.user._id,
-        username: data.user.username,
-        role: data.user.role,
-        companyId: data.user.companyId,
-      });
-
-      toast({
-        title: "Welcome to HireFlow!",
-        description:
-          role === "company"
-            ? `Your company was registered. Company ID: ${data.user.companyId}`
-            : "Your account has been created successfully!",
-      });
-
-      navigate("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Registration failed",
-        description:
-          error instanceof Error ? error.message : "Something went wrong",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+  try {
+    if (role === "recruiter" && !companyId) {
+      throw new Error("Company ID is required for recruiters.");
     }
-  };
+
+    if (role === "company" && !companyName) {
+      throw new Error("Company name is required.");
+    }
+
+    const payload = {
+      username,
+      password,
+      role,
+      ...(role === "recruiter" && { companyId }),
+      ...(role === "company" && { companyName }),
+    };
+
+    const data = await registerMutation(payload);
+
+    Cookies.set("token", data.token, { expires: 7 });
+
+    login({
+      id: data.user._id,
+      username: data.user.username,
+      role: data.user.role as UserRole,
+      companyId: data.user.companyId,
+    });
+
+    toast({
+      title: "Welcome to HireFlow!",
+      description:
+        role === "company"
+          ? `Your company was registered. Company ID: ${data.user.companyId}`
+          : "Your account has been created successfully!",
+    });
+
+    navigate("/dashboard");
+  } catch (error) {
+    toast({
+      title: "Registration failed",
+      description:
+        error instanceof Error ? error.message : "Something went wrong",
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <MainLayout>

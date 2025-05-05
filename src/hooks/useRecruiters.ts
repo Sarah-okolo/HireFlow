@@ -1,6 +1,6 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { axiosPrivate } from '@/lib/axiosPrivate';
 
 // Define query keys
 export const recruiterKeys = {
@@ -14,7 +14,7 @@ export const useRecruiters = (companyId: string) => {
   return useQuery({
     queryKey: recruiterKeys.byCompany(companyId),
     queryFn: async () => {
-      const response = await apiClient.get(`/companies/${companyId}/recruiters`);
+      const response = await axiosPrivate.get(`/companies/${companyId}/recruiters`);
       return response.data;
     },
     enabled: !!companyId,
@@ -27,7 +27,7 @@ export const useRemoveRecruiter = () => {
   
   return useMutation({
     mutationFn: async ({ companyId, recruiterId }: { companyId: string; recruiterId: string }) => {
-      const response = await apiClient.delete(`/companies/${companyId}/recruiters/${recruiterId}`);
+      const response = await axiosPrivate.delete(`/companies/${companyId}/recruiters/${recruiterId}`);
       return response.data;
     },
     onSuccess: (_, variables) => {
