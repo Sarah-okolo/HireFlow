@@ -25,17 +25,17 @@ axiosPrivate.interceptors.request.use(
 );
 
 // Response interceptor: handle errors
-axiosPrivate.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const status = error?.response?.status;
+// axiosPrivate.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     const status = error?.response?.status;
 
-    if (status === 401) {
-      Cookies.remove('token');
-      // Optional: Show a toast or push error context
-      window.location.href = '/login'; // You could use React Router navigate instead
-    }
+//     if (status === 401) {
+//       Cookies.remove('token');
+//       // Optional: Show a toast or push error context
+//       window.location.href = '/login'; // You could use React Router navigate instead
+//     }
 
-    return Promise.reject(error);
-  }
-);
+//     return Promise.reject(error);
+//   }
+// );
