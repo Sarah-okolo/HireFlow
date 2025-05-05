@@ -23,7 +23,7 @@ type RegisterResponse = {
 export const useRegisterMutation = () => {
   return useMutation<RegisterResponse, Error, RegisterPayload>({
     mutationFn: async (payload) => {
-      const response = await axios.post("https://hireflow-server-production.up.railway.app/signup", payload);
+      const response = await axios.post("https://hireflow-server-production.up.railway.app/api/auth/signup", payload);
       return response.data;
     },
   });
