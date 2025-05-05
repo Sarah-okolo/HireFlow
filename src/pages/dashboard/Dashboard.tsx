@@ -135,7 +135,7 @@ export default function Dashboard() {
 
         <h2 className="text-2xl font-bold mt-4">Recent Job Posts</h2>
         <div className="grid gap-4">
-          {recruiterStats.recentJobs.map((job) => (
+          {recruiterStats?.recentJobs?.map((job) => (
             <Card key={job.id}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
