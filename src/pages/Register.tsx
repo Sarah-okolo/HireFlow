@@ -1,10 +1,13 @@
-
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import Cookies from "js-cookie";
+import {
+  Card, CardContent, CardDescription, CardFooter,
+  CardHeader, CardTitle
+} from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { UserRole, useAuthStore } from "@/stores/authStore";
@@ -22,83 +25,72 @@ export default function Register() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Handle role change
   const handleRoleChange = (newRole: UserRole) => {
     setRole(newRole);
     setShowCompanyIdField(newRole === "recruiter");
-    if (newRole === "company") {
-      setCompanyId("");
-    } else if (newRole !== "recruiter") {
-      setCompanyId("");
-      setCompanyName("");
-    }
+    if (newRole !== "recruiter") setCompanyId("");
+    if (newRole !== "company") setCompanyName("");
   };
 
-  // Generate company ID from company name
-  const generateCompanyId = (name: string): string => {
-    // Simplified version: take first 3 chars + random string
-    const prefix = name.toLowerCase().replace(/[^a-z0-9]/g, "").substring(0, 3);
-    const randomPart = Math.random().toString(36).substring(2, 8);
-    return `${prefix}-${randomPart}`;
-  };
-
-  // In a real app, this would be an actual API call
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       if (role === "recruiter" && !companyId) {
-        throw new Error("Company ID is required for recruiters");
+        throw new Error("Company ID is required for recruiters.");
       }
 
       if (role === "company" && !companyName) {
-        throw new Error("Company name is required");
+        throw new Error("Company name is required.");
       }
 
-      // Generate company ID for company role
-      let finalCompanyId = companyId;
-      if (role === "company") {
-        finalCompanyId = generateCompanyId(companyName);
-      }
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Mock registration - in a real app, this would be an API call
-      const userId = `user-${Math.random().toString(36).substring(2, 10)}`;
-      
-      // Store role in localStorage for mock login later
-      localStorage.setItem(`${username}-role`, role);
-      if (finalCompanyId) {
-        localStorage.setItem(`${username}-companyId`, finalCompanyId);
-      }
-
-      login({
-        id: userId,
+      const body = {
         username,
+        password,
         role,
-        companyId: finalCompanyId || undefined
+        ...(role === "recruiter" && { companyId }),
+        ...(role === "company" && { companyName })
+      };
+      console.log("Registration request body:", body);
+
+      const res = await fetch("https://hireflow-server-production.up.railway.app/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
 
-      // Show welcome toast with company ID for company role
-      if (role === "company") {
-        toast({
-          title: "Welcome to HireFlow!",
-          description: `Your company has been registered successfully. Your Company ID is: ${finalCompanyId}`,
-        });
-      } else {
-        toast({
-          title: "Registration successful",
-          description: "Your account has been created successfully!",
-        });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || "Registration failed");
       }
+
+      // Set token to cookie
+      Cookies.set("token", data.token, { expires: 7 }); // Expires in 7 days
+        
+
+      login({
+        id: data.user._id,
+        username: data.user.username,
+        role: data.user.role,
+        companyId: data.user.companyId,
+      });
+
+      toast({
+        title: "Welcome to HireFlow!",
+        description:
+          role === "company"
+            ? `Your company was registered. Company ID: ${data.user.companyId}`
+            : "Your account has been created successfully!",
+      });
 
       navigate("/dashboard");
     } catch (error) {
       toast({
         title: "Registration failed",
-        description: error instanceof Error ? error.message : "Something went wrong",
+        description:
+          error instanceof Error ? error.message : "Something went wrong",
         variant: "destructive",
       });
     } finally {
@@ -161,18 +153,19 @@ export default function Register() {
                   </div>
                 </RadioGroup>
               </div>
-              
+
               {showCompanyIdField && (
                 <div className="space-y-2">
                   <Label htmlFor="companyId">Company ID</Label>
                   <Input
                     id="companyId"
                     type="text"
-                    placeholder="Enter the company ID provided to you"
+                    placeholder="Enter your company ID"
                     value={companyId}
                     onChange={(e) => setCompanyId(e.target.value)}
                     required
                   />
+                  <p className="text-xs text-muted-foreground">Don't have a company ID? Register your company on the platform to receive one.</p>
                 </div>
               )}
 

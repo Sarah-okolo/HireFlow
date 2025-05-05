@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { MainLayout } from "@/components/layouts/MainLayout";
 import { useToast } from "@/hooks/use-toast";
+import Cookies from "js-cookie";
+
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -17,34 +19,49 @@ export default function Login() {
   const { login } = useAuthStore();
   const { toast } = useToast();
 
-  // In a real app, this would be an actual API call
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+  
     try {
-      // Mock login - in a real app, this would be an API call
-      if (!username || !password) {
-        throw new Error("Please provide both username and password");
-      }
-
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Simple mock data for demonstration purposes
-      const mockUserData = {
-        id: "user-123",
+      const body = {
         username,
-        // Pull role from local storage if previously registered, otherwise default to candidate
-        role: (localStorage.getItem(`${username}-role`) || "candidate") as UserRole,
-        companyId: localStorage.getItem(`${username}-companyId`) || undefined
+        password,
       };
 
-      login(mockUserData);
+      console.log("Login request body:", body);
+
+      const response = await fetch("https://hireflow-server-production.up.railway.app/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        console.log('error:', data);
+        throw new Error(data.error || "Login failed");
+      }
+  
+      // Set token to cookie
+      Cookies.set("token", data.token, { expires: 7 }); // Expires in 7 days
+  
+      // Pass user data to your auth store
+      login({
+        id: data.user._id,
+        username: data.user.username,
+        role: data.user.role,
+        companyId: data.user.companyId,
+      });
+  
       toast({
         title: "Logged in successfully",
-        description: `Welcome back, ${username}!`,
+        description: `Welcome back, ${data.user.username}!`,
       });
+  
       navigate("/dashboard");
     } catch (error) {
       toast({
@@ -56,6 +73,7 @@ export default function Login() {
       setLoading(false);
     }
   };
+  
 
   return (
     <MainLayout>
