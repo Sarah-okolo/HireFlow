@@ -23,7 +23,7 @@ type LoginResponse = {
 export const useLoginMutation = () =>
   useMutation({
     mutationFn: async (credentials: LoginCredentials): Promise<LoginResponse> => {
-      const res = await axios.post('/api/auth/login', credentials);
+      const res = await axios.post('/login', credentials);
       return res.data;
     },
   });

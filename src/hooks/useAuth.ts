@@ -20,7 +20,7 @@ export const useLogin = () => {
   
   return useMutation({
     mutationFn: async (credentials: LoginCredentials) => {
-      const response = await axiosPrivate.post('/auth/login', credentials);
+      const response = await axiosPrivate.post('login', credentials);
       return response.data;
     },
     onSuccess: (data) => {
@@ -43,7 +43,7 @@ export const useRegister = () => {
   
   return useMutation({
     mutationFn: async (data: RegisterData) => {
-      const response = await axiosPrivate.post('/auth/register', data);
+      const response = await axiosPrivate.post('/signup', data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -66,7 +66,7 @@ export const useLogout = () => {
   
   return useMutation({
     mutationFn: async () => {
-      return await axiosPrivate.post('/auth/logout');
+      return await axiosPrivate.post('/logout');
     },
     onSettled: () => {
       // Always clear regardless of success/failure
