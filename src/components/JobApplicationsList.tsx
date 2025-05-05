@@ -57,8 +57,8 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
       };
       // Update the local applications list to reflect the change (optimistic UI)
       setApplications((prevApplications) =>
-        prevApplications.map((application) =>
-          application._id === applicationId
+        prevApplications?.map((application) =>
+          application?._id === applicationId
             ? { ...application, status: statusMap[action] }
             : application
         )
@@ -72,7 +72,7 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px]">
         <DialogHeader>
-          <DialogTitle>Applications for {job.title}</DialogTitle>
+          <DialogTitle>Applications for {job?.title}</DialogTitle>
           <DialogDescription>
             Review all applications for this job posting.
           </DialogDescription>
@@ -96,17 +96,17 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
               </TableHeader>
               <TableBody>
                 {applications.map((application) => (
-                  <TableRow key={application._id}>
-                    <TableCell className="font-medium">{application.candidateId}</TableCell>
-                    <TableCell>{application.resumeFileName}</TableCell>
-                    <TableCell>{format(new Date(application.appliedAt), "PPP")}</TableCell>
-                    <TableCell>{getStatusBadge(application.status)}</TableCell>
+                  <TableRow key={application?._id}>
+                    <TableCell className="font-medium">{application?.candidateId}</TableCell>
+                    <TableCell>{application?.resumeFileName}</TableCell>
+                    <TableCell>{format(new Date(application?.appliedAt), "PPP")}</TableCell>
+                    <TableCell>{getStatusBadge(application?.status)}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleStatusUpdate(application._id, "shortlist")}
-                        disabled={application.status === "shortlisted"}
+                        onClick={() => handleStatusUpdate(application?._id, "shortlist")}
+                        disabled={application?.status === "shortlisted"}
                       >
                         Shortlist
                       </Button>
@@ -114,8 +114,8 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
                         variant="ghost"
                         size="sm"
                         className="text-red-500"
-                        onClick={() => handleStatusUpdate(application._id, "reject")}
-                        disabled={application.status === "rejected"}
+                        onClick={() => handleStatusUpdate(application?._id, "reject")}
+                        disabled={application?.status === "rejected"}
                       >
                         Reject
                       </Button>
@@ -123,8 +123,8 @@ export function JobApplicationsList({ job, open, onOpenChange }: JobApplications
                         variant="ghost"
                         size="sm"
                         className="text-green-500"
-                        onClick={() => handleStatusUpdate(application._id, "approve")}
-                        disabled={application.status === "accepted"}
+                        onClick={() => handleStatusUpdate(application?._id, "approve")}
+                        disabled={application?.status === "accepted"}
                       >
                         Approve
                       </Button>

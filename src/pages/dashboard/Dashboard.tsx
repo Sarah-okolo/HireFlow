@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { JobApplicationDialog } from "@/components/JobApplicationDialog";
-import axios from "axios";
+import {axiosPrivate} from "@/lib/axiosPrivate";
 
 interface Job {
   id: string;
@@ -41,13 +41,13 @@ export default function Dashboard() {
     async function fetchDashboardData() {
       try {
         if (user?.role === "candidate") {
-          const { data } = await axios.get("/api/jobs");
+          const { data } = await axiosPrivate.get("/jobs");
           setJobs(data.jobs || []);
         } else if (user?.role === "recruiter") {
-          const { data } = await axios.get("/api/recruiter/overview");
+          const { data } = await axiosPrivate.get(`/recruiters`);
           setRecruiterStats(data);
         } else if (user?.role === "company") {
-          const { data } = await axios.get("/api/company/overview");
+          const { data } = await axiosPrivate.get("/companies");
           setCompanyStats(data);
         }
       } catch (error) {
@@ -69,18 +69,18 @@ export default function Dashboard() {
 
         <div className="grid gap-4">
           {jobs.length > 0 ? (
-            jobs.map((job) => (
-              <Card key={job.id} className="overflow-hidden">
+            jobs?.map((job) => (
+              <Card key={job?.id} className="overflow-hidden">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div>
-                      <CardTitle>{job.title}</CardTitle>
+                      <CardTitle>{job?.title}</CardTitle>
                       <CardDescription className="mt-1">
-                        {job.company} • {job.location} • {job.type}
+                        {job?.company} • {job?.location} • {job?.type}
                       </CardDescription>
                     </div>
                     <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
-                      {job.salary}
+                      {job?.salary}
                     </div>
                   </div>
                 </CardHeader>
@@ -89,7 +89,7 @@ export default function Dashboard() {
                     {job.description}
                   </p>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {job.tags.map((tag, index) => (
+                    {job?.tags?.map((tag, index) => (
                       <span key={index} className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-xs">
                         {tag}
                       </span>
@@ -128,9 +128,9 @@ export default function Dashboard() {
         </div>
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          <StatCard title="Active Jobs" description="Your current job postings" value={recruiterStats.activeJobs} />
-          <StatCard title="Applications" description="Total applications received" value={recruiterStats.totalApplications} />
-          <StatCard title="Shortlisted" description="Candidates shortlisted" value={recruiterStats.shortlisted} />
+          <StatCard title="Active Jobs" description="Your current job postings" value={recruiterStats?.activeJobs} />
+          <StatCard title="Applications" description="Total applications received" value={recruiterStats?.totalApplications} />
+          <StatCard title="Shortlisted" description="Candidates shortlisted" value={recruiterStats?.shortlisted} />
         </div>
 
         <h2 className="text-2xl font-bold mt-4">Recent Job Posts</h2>
@@ -140,9 +140,9 @@ export default function Dashboard() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <CardTitle>{job.title}</CardTitle>
+                    <CardTitle>{job?.title}</CardTitle>
                     <CardDescription className="mt-1">
-                      Posted {job.postedAgo} • {job.applicationCount} applications
+                      Posted {job?.postedAgo} • {job?.applicationCount} applications
                     </CardDescription>
                   </div>
                   <Button variant="outline" size="sm">View Applications</Button>
@@ -151,8 +151,8 @@ export default function Dashboard() {
               <CardContent>
                 <div className="flex justify-between items-center text-sm">
                   <div className="flex items-center gap-4">
-                    <span className="text-muted-foreground">Status: <span className="text-green-600 font-medium">{job.status}</span></span>
-                    <span className="text-muted-foreground">Expires: <span className="font-medium">{job.expiresIn}</span></span>
+                    <span className="text-muted-foreground">Status: <span className="text-green-600 font-medium">{job?.status}</span></span>
+                    <span className="text-muted-foreground">Expires: <span className="font-medium">{job?.expiresIn}</span></span>
                   </div>
                   <div className="flex gap-2">
                     <Button size="sm" variant="ghost">Edit</Button>
@@ -173,10 +173,10 @@ export default function Dashboard() {
         </div>
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Total Jobs" description="Job postings by your company" value={companyStats.totalJobs} />
-          <StatCard title="Recruiters" description="Active recruiters" value={companyStats.recruiters} />
-          <StatCard title="Applications" description="Total applications received" value={companyStats.totalApplications} />
-          <StatCard title="Hired" description="Candidates hired" value={companyStats.hired} />
+          <StatCard title="Total Jobs" description="Job postings by your company" value={companyStats?.totalJobs} />
+          <StatCard title="Recruiters" description="Active recruiters" value={companyStats?.recruiters} />
+          <StatCard title="Applications" description="Total applications received" value={companyStats?.totalApplications} />
+          <StatCard title="Hired" description="Candidates hired" value={companyStats?.hired} />
         </div>
 
         <div className="grid gap-6 grid-cols-1">
@@ -187,11 +187,11 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <ul className="space-y-4">
-                {companyStats.recentJobs.map((job) => (
+                {companyStats?.recentJobs?.map((job) => (
                   <li key={job.id} className="flex justify-between items-center">
                     <div>
-                      <p className="font-medium">{job.title}</p>
-                      <p className="text-sm text-muted-foreground">Posted by {job.recruiter} • {job.postedAgo}</p>
+                      <p className="font-medium">{job?.title}</p>
+                      <p className="text-sm text-muted-foreground">Posted by {job?.recruiter} • {job?.postedAgo}</p>
                     </div>
                     <Button variant="outline" size="sm">View</Button>
                   </li>
@@ -215,7 +215,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      {user?.role && dashboardContent[user.role]}
+      {user?.role && dashboardContent[user?.role]}
     </DashboardLayout>
   );
 }
